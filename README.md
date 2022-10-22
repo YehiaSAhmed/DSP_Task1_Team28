@@ -27,4 +27,8 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 ## Features
-
+- Zoom in and out of the signal 
+- Add or remove sinusoidal signals (sin or cosine) 
+- Add or remove noise 
+- Save signal as csv file extension
+- 
