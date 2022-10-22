@@ -28,7 +28,7 @@ streamlit run app.py
 ```
 ## Features
 - Zoom in and out of the signal 
-- Add or remove sinusoidal signals (sin or cosine) 
-- Add or remove noise 
+- Add or remove sinusoidal signals (sin or cosine) of varying frequencies and magnitudes
+- Add or remove noise with a variable/custom SNR level
 - Save signal as csv file extension
 - 
