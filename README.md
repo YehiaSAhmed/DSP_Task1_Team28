@@ -1,1 +1,30 @@
+# Signal Studio - Task 1 DSP
+## About
+Signal Studio is a webapp that depicts signal sampling and recovery while emphasising the significance and validation of the Nyquist rate.
+## Team Members
+Name| Section 
+--- | --- |
+Aya Sameh Ahmed | 1 
+Mohamed Hashem Abdelwareth  | 1 
+Mina Safwat Samy  | 2
+Yehia Said Ahmed | 2 
+## How to run
+1. **_Clone the repository_**
+
+```sh
+$ git clone https://github.com/YehiaSAhmed/DSP_Task1_Team28
+```
+2. **_Navigate to repository directory_**
+```sh
+$ cd DSP_Task1_Team28
+```
+3. **_install project dependencies_**
+```sh
+pip install -r requirements.txt
+```
+4. **_Run the application_**
+```sh
+streamlit run app.py
+```
+## Features
 
