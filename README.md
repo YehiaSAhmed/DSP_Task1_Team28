@@ -27,10 +27,9 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 ## Features
-- Zoom in and out of the signal 
-- Add or remove sinusoidal signals (sin or cosine) of varying frequencies and magnitudes
--Signal sampling and reconstruction
-- Add or remove noise with a variable/custom SNR level
-- Save signal as csv file extension
-- The application is compatible with any platform (PC, mobile, etc.)
-
+- Zoom in and out of the signal.
+- Add or remove sinusoidal signals (sin or cosine) of varying frequencies and magnitudes.
+- Add or remove noise with a variable/custom SNR level.
+- Save signal as csv file extension.
+- The application is compatible with any platform (PC, mobile, etc.).
+-Signal sampling and reconstruction.
