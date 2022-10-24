@@ -32,4 +32,5 @@ streamlit run app.py
 - Add or remove noise with a variable/custom SNR level
 - Save signal as csv file extension
 - The application is compatible with any platform (PC, mobile, etc.)
+- Signal sampling and reconstruction.
 
