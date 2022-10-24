@@ -5,7 +5,7 @@ Signal Studio is a webapp that depicts signal sampling and recovery while emphas
 Name| Section 
 --- | --- |
 Aya Sameh Ahmed | 1 
-Mohamed Hashem Abdelwareth  | 1 
+Mohamed Hashem Abdelwareth  | 2 
 Mina Safwat Samy  | 2
 Yehia Said Ahmed | 2 
 ## How to run
