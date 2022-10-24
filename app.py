@@ -51,14 +51,14 @@ st.title("sampling studio")
 
 
 
-def trysampling(t,y,MF,SF): 
+def trysampling(t,y,SF): 
         i=0
         sampledt=[]
         sampledy=[]
         fulltime= t[-1]-t[0]
         period=1/MF
-        cycles=int(fulltime/period)
-        pointsincycle=len(t)/cycles
+        #cycles=int(fulltime/period)
+        #pointsincycle=len(t)/cycles
         sampledpoints=SF*float(fulltime)
         
         step= math.ceil(int(len(t)/sampledpoints))
@@ -213,11 +213,12 @@ if uploaded_file is not None:
         st.session_state.total += st.session_state.signal  # type: ignore
     fig=plt.figure()
     plt.plot(t,st.session_state.total)
-    xsampled,ysampled=trysampling(t,st.session_state.total,maxfrequency,SF)
+    xsampled,ysampled=trysampling(t,st.session_state.total,SF)
     plt.stem(xsampled, ysampled, linefmt='yellow', markerfmt='x', bottom=0)
     st.plotly_chart(fig,use_container_width=True)
     yreconst= sinc_interp(ysampled, xsampled , t)
     fig2=plt.figure()
+    plt.scatter(xsampled,ysampled)
     plt.plot(t,yreconst)
     st.plotly_chart(fig2,use_container_width=True)
 
