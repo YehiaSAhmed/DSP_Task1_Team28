@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -7,6 +8,10 @@ import plotly.express as px
 import plotly.graph_objs as go
 import matplotlib.pyplot as plt
 import math
+from plotly.subplots import make_subplots
+
+
+
 
 
 
@@ -44,20 +49,21 @@ if "check_csv" not in st.session_state:
 
 
 # title
-st.title("sampling studio")
+st.title("Sampling Studio")
 
 
-def trysampling(t, y, MF, SF):
+def trysampling(t, y, SF):
     i = 0
     sampledt = []
     sampledy = []
-    fulltime = math.ceil(t[-1]-t[0])
-    period = 1/MF
-    cycles = int(fulltime/period)
-    pointsincycle = len(t)/cycles
+    fulltime = float((t[-1]-t[0]))
+    #period = 1/MF
+    #cycles = int(fulltime/period)
+    #pointsincycle = len(t)/cycles
     sampledpoints = SF*float(fulltime)
 
-    step = math.ceil(int(len(t)/sampledpoints))
+    step = (round(len(t)/sampledpoints))
+    #print(step)
     if sampledpoints > len(t) or step == 0:
         return t, y
     else:
@@ -125,7 +131,7 @@ def download(time):
     return df
 
 with st.sidebar:
-    select = st.selectbox("type of sampling",["sin wave","csv file"])
+    select = st.selectbox("type of sampling",["csv file","sin wave"])
 
 
 if select =="csv file":
@@ -139,7 +145,8 @@ if select =="csv file":
         st.session_state.count = 0
     if uploaded_file is not None:
         with st.sidebar:
-            SF = st.slider('sampling frequency', 1, 100 , 50)
+            maxFrequency=int(st.text_input("Please enter Max Frequency", value="10" ))
+            SF = st.slider('sampling frequency', 1, 3*maxFrequency , 2*maxFrequency)
         file = pd.read_csv(uploaded_file)
         # x_file = file.iloc[0:x,0].values
         y = file.iloc[:, 1].values
@@ -187,7 +194,7 @@ if select =="csv file":
                         addsignal("sin", int(amp), int(freq), t)
                     elif Button and genre == 'cos':
                         addsignal("cos", int(amp), int(freq), t)
-
+            
                 except:
                     st.write("invalid input")
                 remove_signal = st.selectbox(
@@ -201,17 +208,50 @@ if select =="csv file":
                     st.write("no signal to remove")
 
 
+           
+        
         if Button:
             st.session_state.total += st.session_state.signal  # type: ignore
-        fig = plt.figure()
-        plt.plot(t, st.session_state.total)
+        #fig,axis = plt.subplots()
+        
+        
+        
+        #plt.plot(t, st.session_state.total)
+        # fig, (ax1, ax2) = plt.subplots(2)
+        # fig.suptitle('Signal And Reconstruction')
+        # ax1.plot(t,st.session_state.total )
+        # ax1.set_title("Signal")
+        # ax1.set_xlabel("Time in second")
+        
+        
         xsampled, ysampled = trysampling(
-            t, st.session_state.total, 10, SF)
+            t, st.session_state.total, SF)
+        print(len(xsampled))
         yreconst = sinc_interp(ysampled, xsampled, t)
-        plt.stem(xsampled, ysampled, linefmt='yellow', markerfmt='x', bottom=0)
-        plt.plot(t,yreconst)
-        plt.xlabel("time")
-        plt.ylabel("signal")
+
+        
+        
+        #plt.stem(xsampled, ysampled, linefmt='yellow', markerfmt='x', bottom=0)
+        
+        #plt.plot(t,yreconst)
+        #axis.set_xlabel("Time in Seconds")
+        #axis.set_xlabel("Amplitude in Volts")
+
+        # ax2.stem(xsampled, ysampled, linefmt='yellow', markerfmt='x', bottom=0)
+        # ax2.plot(t,yreconst)
+        # ax1.set_title("Samples and reconstruction")
+        # ax2.set_xlabel("Time in second")
+        fig = make_subplots(rows=1, cols=1)
+        fig.add_trace(go.Scatter(y=st.session_state.total,x=t, mode="lines",name="Signal"), row=1, col=1)
+        fig.add_trace(go.Scatter(y=ysampled,x=xsampled, mode="markers",name="samples"), row=1, col=1)
+        fig.add_trace(go.Scatter(y=yreconst,x=t, mode="lines",name="reconstruction"), row=1, col=1)
+        fig.update_xaxes(title_text='Time (in seconds)')
+        fig.update_yaxes(title_text='Amplitude (in volts)')
+        fig.update_layout(autosize=True)
+    
+
+        
+    	
         st.plotly_chart(fig, use_container_width=True)
         with st.sidebar:
             st.download_button("download csv file", download(t).to_csv(),
@@ -232,6 +272,7 @@ elif select =="sin wave":
 
     # st.session_state.all_signals.clear()
     with st.sidebar:
+        
         freqency = st.slider("frequency", min_value=1, max_value=100)
         sampling_frequency = st.slider(
             'sampling frequency', 1, 3*int(freqency), int(2*int(freqency)))
@@ -239,7 +280,7 @@ elif select =="sin wave":
 
     # st.session_state.total = np.zeros(len(time))
     # st.session_state.signal = np.zeros(len(time))
-    sin_signal = np.sin(2 * np.pi * freqency * time)
+    sin_signal = np.sin(2 * np.pi * int(freqency) * time)
     if st.session_state.count2 == 0:
         st.session_state.signal = sin_signal
         st.session_state.total += st.session_state.signal
@@ -299,16 +340,25 @@ elif select =="sin wave":
 
 
     x_sampled, y_sampled = trysampling(
-        time, st.session_state.total, freqency, sampling_frequency+1)
+        time, st.session_state.total,  sampling_frequency+1)
     y_inter = sinc_interp(y_sampled, x_sampled, time)
-    fig = plt.figure()
-    plt.plot(time, st.session_state.total)
-    plt.stem(x_sampled, y_sampled, linefmt='yellow',
-             markerfmt='x', bottom=0, use_line_collection=True)
-    plt.plot(time,y_inter)
-    plt.xlabel("time")
-    plt.ylabel("signal")
+    # fig = plt.figure()
+    # plt.plot(time, st.session_state.total)
+    # plt.stem(x_sampled, y_sampled, linefmt='yellow',
+    #          markerfmt='x', bottom=0, use_line_collection=True)
+    # plt.plot(time,y_inter)
+    # plt.xlabel("time")
+    # plt.ylabel("signal")
+    # st.plotly_chart(fig, use_container_width=True)
+    fig = make_subplots(rows=1, cols=1)
+    fig.add_trace(go.Scatter(y=st.session_state.total,x=time, mode="lines",name="Signal"), row=1, col=1)
+    fig.add_trace(go.Scatter(y=y_sampled,x=x_sampled, mode="markers",name="samples"), row=1, col=1)
+    fig.add_trace(go.Scatter(y=y_inter,x=time, mode="lines",name="reconstruction"), row=1, col=1)
+    fig.update_xaxes(title_text='Time (in seconds)')
+    fig.update_yaxes(title_text='Amplitude (in volts)')
+    fig.update_layout(autosize=True)
     st.plotly_chart(fig, use_container_width=True)
+    
     
     with st.sidebar:
         st.download_button("download csv file", download(time).to_csv(),
