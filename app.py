@@ -10,11 +10,6 @@ import matplotlib.pyplot as plt
 import math
 from plotly.subplots import make_subplots
 
-
-
-
-
-
 Button = False
 
 # css modification
@@ -131,7 +126,7 @@ def download(time):
     return df
 
 with st.sidebar:
-    select = st.selectbox("type of sampling",["csv file","sin wave"])
+    select = st.selectbox("type of sampling",["sin wave","csv file"])
 
 
 if select =="csv file":
