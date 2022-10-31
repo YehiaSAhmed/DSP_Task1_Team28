@@ -26,14 +26,22 @@ pip install -r requirements.txt
 ```sh
 streamlit run app.py
 ```
+##libraries
+-streamlit
+-pandas
+-numpy
+-plotly.express
+-plotly.graph_objs
+-matplotlib.pyplot
 ## Features
-- Load and plot a CSV Signal or compose and mix your own Sinusoidals
-- Signal sampling and reconstruction.
-- Interactive plots ( zoom , pan, slice, and download as images )  
-- View and Hide each curve on the plot
-- Add or remove sinusoidal signals (sin or cosine) of varying frequencies and magnitudes
-- Add or remove noise with a variable/custom SNR level
-- Save signal as csv file extension
-- The application is compatible with any platform (PC, mobile, etc.)
+This web app allows user to
+- Load and plot a CSV Signal or compose and mix your own Sinusoidals.
+- Sample a signal with varying sampling frequency and recostruct the sampled points.
+- Visualize Interactive plots (zoom , pan, slice, and download as images) . 
+- View and Hide each curve on the same graph.
+- Add or remove sinusoidal signals (sin or cosine) of varying frequencies and magnitudes.
+- Add or remove noise with a variable/custom SNR level.
+- Save signal as csv file extension.
+-Use this application in any platform (PC, mobile, etc.)
 
 
