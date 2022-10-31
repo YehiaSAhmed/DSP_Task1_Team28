@@ -11,7 +11,6 @@ import math
 from plotly.subplots import make_subplots
 
 
-
 st.set_page_config(layout="wide")
 
 
@@ -22,39 +21,38 @@ with open('style.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 # session states variables
-# store amplitude of signal 
-# if 'signal' not in st.session_state:
-#     st.session_state.signal = np.zeros(1000, dtype=float)
+
 # total amplitude of all signals
 if 'total' not in st.session_state:
     st.session_state.total = np.zeros(1000, dtype=float)
-    # list of dictionaries for added signals 
+    # list of dictionaries for added signals
 if 'all_signals' not in st.session_state:
     st.session_state.all_signals = []
-# change from sin to csv ( initialize state variables)    
+# change from sin to csv ( initialize state variables)
 if "csv_mode" not in st.session_state:
     st.session_state.csv_mode = 0
 # change from csv to sin (initalize sin signal )
 if "sin_mode" not in st.session_state:
-    st.session_state.sin_mode =0
+    st.session_state.sin_mode = 0
 
 if "noise" not in st.session_state:  # to save noise
     st.session_state.noise = np.zeros(1000, dtype=float)
 
-# rerun after removing noise // streamlit bug for checkbox// for sin 
+# rerun after removing noise // streamlit bug for checkbox// for sin
 if "check" not in st.session_state:
     st.session_state.check = 0
-    # check if uploaded file is changed 
+    # check if uploaded file is changed
 if "checklastfile" not in st.session_state:
     st.session_state.checklastfile = ""
-# save and reset  original sin signal (@change frequency )    
-if "save_reset" not in st.session_state:
-    st.session_state.save_reset = 0
+# # save and reset  original sin signal (@change frequency )
+# if "save_reset" not in st.session_state:
+#     st.session_state.save_reset = 0
 
-# rerun after removing noise  // streamlit bug for checkbox // for csv 
+# rerun after removing noise  // streamlit bug for checkbox // for csv
 if "check_csv" not in st.session_state:
     st.session_state.check_csv = 0
-
+if "max_freq" not in st.session_state:
+    st.session_state.max_freq = 0
 
 # title
 st.title("Sampling Studio")
@@ -64,14 +62,14 @@ def sampling(t, y, SF):
     i = 0
     sampledt = []
     sampledy = []
-    fulltime = float((t[-1]-t[0])) 
+    fulltime = float((t[-1]-t[0]))
     #period = 1/MF
     #cycles = int(fulltime/period)
     #pointsincycle = len(t)/cycles
     sampledpoints = SF*fulltime
 
     step = (round(len(t)/sampledpoints))
-    #print(step)
+    # print(step)
     if sampledpoints > len(t) or step == 0:
         return t, y
     else:
@@ -87,7 +85,8 @@ def sinc_interp(Ys, Ts, t):
     sampled_amplitude = np.array(Ys)
     sampled_time = np.array(Ts)
     T = (sampled_time[1] - sampled_time[0])
-    sincM = np.tile(t, (len(sampled_time), 1)) - np.tile(sampled_time[:, np.newaxis], (1, len(t)))
+    sincM = np.tile(t, (len(sampled_time), 1)) - \
+        np.tile(sampled_time[:, np.newaxis], (1, len(t)))
     yNew = np.dot(sampled_amplitude, np.sinc(sincM/T))
     return yNew
 
@@ -101,6 +100,8 @@ def addsignal(type, amp, freq, time):
         st.session_state.total += amp*np.cos(2*np.pi*freq*time)
         st.session_state.all_signals.append(
             {"type": "cos", "freq": freq, "amp": amp})
+    if freq > st.session_state.max_freq:
+        st.session_state.max_freq = freq
 
 
 def addnoise(snrratio, time):
@@ -125,9 +126,10 @@ def removesignal(type, amp, freq, time):
         st.session_state.all_signals.remove(
             {"type": "cos", "freq": freq, "amp": amp})
 
+
 def download(time):
     with open("newsignal.csv", "w", newline="") as f:
-    # create the csv writer
+        # create the csv writer
         writer = csv.writer(f)
 
     # write a row to the csv file
@@ -137,23 +139,25 @@ def download(time):
     df = pd.read_csv("newsignal.csv")
     return df
 
+
 with st.sidebar:
-    select = st.selectbox("type of sampling",["sin wave","csv file"])
+    select = st.selectbox("type of sampling", ["sin wave", "csv file"])
 
 
-if select =="csv file":
+if select == "csv file":
     st.session_state.sin_mode = 0
     with st.sidebar:
-    # uploaded file
-        uploaded_file = st.file_uploader("Choose a file",type="csv")
-
+        # uploaded file
+        uploaded_file = st.file_uploader("Choose a file", type="csv")
 
     if uploaded_file != st.session_state.checklastfile:
         st.session_state.csv_mode = 0
     if uploaded_file is not None:
         with st.sidebar:
-            maxFrequency=int(st.text_input("Please enter Max Frequency", value="10" ))
-            SF = st.slider('sampling frequency', 1, 3*maxFrequency , 2*maxFrequency)
+            maxFrequency = int(st.text_input(
+                "Please enter Max Frequency", value="10"))
+            SF = st.slider('sampling frequency', 1, 3 *
+                           maxFrequency, 2*maxFrequency)
         file = pd.read_csv(uploaded_file)
         # x_file = file.iloc[0:x,0].values
         y = file.iloc[:, 1].values
@@ -163,7 +167,6 @@ if select =="csv file":
             st.session_state.csv_mode += 1
             st.session_state.total = np.zeros(len(t))
             st.session_state.total += y  # type: ignore
-            st.session_state.signal = np.zeros(len(t))
             st.session_state.noise = np.zeros(len(t))
             st.session_state.checklastfile = uploaded_file
             st.session_state.all_signals.clear()
@@ -171,7 +174,8 @@ if select =="csv file":
         with st.sidebar:
             snrbutton = st.checkbox("add noise")
             if snrbutton:
-                snrratio = st.slider("snr", value=50, min_value=1, max_value=100)
+                snrratio = st.slider(
+                    "snr", value=50, min_value=1, max_value=100)
                 removenoise(st.session_state.noise)
                 st.session_state.noise = addnoise(snrratio, t)
                 st.session_state.check_csv = 1
@@ -201,13 +205,13 @@ if select =="csv file":
                         addsignal("sin", int(amp), int(freq), t)
                     elif Button and genre == 'cos':
                         addsignal("cos", int(amp), int(freq), t)
-            
+
                 except:
                     st.write("invalid input")
                 remove_signal = st.selectbox(
-                            "remove signal", st.session_state.all_signals)
+                    "remove signal", st.session_state.all_signals)
                 removebutton = st.button("remove")
-                if removebutton and len(st.session_state.all_signals)!=0:
+                if removebutton and len(st.session_state.all_signals) != 0:
                     removesignal(
                         remove_signal["type"], remove_signal["amp"], remove_signal["freq"], t)
                     st.experimental_rerun()
@@ -215,57 +219,32 @@ if select =="csv file":
                     st.write("no signal to remove")
 
 
-           
-        
-        # if Button:
-        #     st.session_state.total += st.session_state.signal  # type: ignore
-        #fig,axis = plt.subplots()
-        
-        
-        
-        #plt.plot(t, st.session_state.total)
-        # fig, (ax1, ax2) = plt.subplots(2)
-        # fig.suptitle('Signal And Reconstruction')
-        # ax1.plot(t,st.session_state.total )
-        # ax1.set_title("Signal")
-        # ax1.set_xlabel("Time in second")
-        
-        
-        xsampled, ysampled =sampling(
+
+
+        xsampled, ysampled = sampling(
             t, st.session_state.total, SF)
         print(len(xsampled))
         yreconst = sinc_interp(ysampled, xsampled, t)
 
-        
-        
-        #plt.stem(xsampled, ysampled, linefmt='yellow', markerfmt='x', bottom=0)
-        
-        #plt.plot(t,yreconst)
-        #axis.set_xlabel("Time in Seconds")
-        #axis.set_xlabel("Amplitude in Volts")
-
-        # ax2.stem(xsampled, ysampled, linefmt='yellow', markerfmt='x', bottom=0)
-        # ax2.plot(t,yreconst)
-        # ax1.set_title("Samples and reconstruction")
-        # ax2.set_xlabel("Time in second")
         fig = make_subplots(rows=1, cols=1)
-        fig.add_trace(go.Scatter(y=st.session_state.total,x=t, mode="lines",name="Signal"), row=1, col=1)
-        fig.add_trace(go.Scatter(y=ysampled,x=xsampled, mode="markers",name="samples"), row=1, col=1)
-        fig.add_trace(go.Scatter(y=yreconst,x=t, mode="lines",name="reconstruction"), row=1, col=1)
+        fig.add_trace(go.Scatter(y=st.session_state.total, x=t,
+                      mode="lines", name="Signal"), row=1, col=1)
+        fig.add_trace(go.Scatter(y=ysampled, x=xsampled,
+                      mode="markers", name="samples"), row=1, col=1)
+        fig.add_trace(go.Scatter(y=yreconst, x=t, mode="lines",
+                      name="reconstruction"), row=1, col=1)
         fig.update_xaxes(title_text='Time (in seconds)')
         fig.update_yaxes(title_text='Amplitude (in volts)')
         fig.update_layout(autosize=True)
-    
 
-        
-    	
         st.plotly_chart(fig, use_container_width=True)
         with st.sidebar:
             st.download_button("download csv file", download(t).to_csv(),
-                        file_name='signal.csv', mime='text/csv')
+                               file_name='signal.csv', mime='text/csv')
 
 
-elif select =="sin wave":
+elif select == "sin wave":
+
     st.session_state.csv_mode = 0
     dt = 0.001
     time = np.arange(0, 1, dt)
@@ -273,34 +252,34 @@ elif select =="sin wave":
         # st.session_state.stack.append(y_file)
         st.session_state.sin_mode += 1
         st.session_state.total = np.zeros(len(time))
-        st.session_state.signal = np.zeros(len(time))
         st.session_state.noise = np.zeros(len(time))
         st.session_state.all_signals.clear()
+        addsignal("sin", 1, 5, time)
+    if len(st.session_state.all_signals) == 0:
+        st.session_state.total = np.zeros(1000)
+    # st.write(st.session_state.max_freq)
 
     # st.session_state.all_signals.clear()
     with st.sidebar:
-        
-        freqency = st.slider("frequency", min_value=1, max_value=100)
+        genre = st.radio(
+            "Signal type",
+            ('sin', 'cos'),)
+        col1, col2 = st.columns(2)
+        with col1:
+            freqency = st.slider("frequency", min_value=1, max_value=100)
+        with col2:
+            amp = st.slider("amp", min_value=1, max_value=100)
+
+        add_signal_button = st.button("add signal")
+        if add_signal_button and genre == 'sin':
+            addsignal("sin", int(amp), int(freqency), time)
+        elif add_signal_button and genre == 'cos':
+            addsignal("cos", int(amp), int(freqency), time)
+
         sampling_frequency = st.slider(
-            'sampling frequency', 1, 3*int(freqency), int(2*int(freqency)))
+            'sampling frequency', st.session_state.max_freq, 5*st.session_state.max_freq, 2*st.session_state.max_freq)
 
 
-    # st.session_state.total = np.zeros(len(time))
-    # st.session_state.signal = np.zeros(len(time))
-    sin_signal = np.sin(2 * np.pi * int(freqency) * time)
-    # add deafault sin signal once
-    if st.session_state.save_reset == 0:
-        st.session_state.signal = sin_signal
-        st.session_state.total += st.session_state.signal
-        st.session_state.save_reset = 1
-
-    # update original signal if add signal/noise 
-    # change in any point --> update signal 
-    a=np.random.randint(1,1000)
-    if st.session_state.signal[a] != sin_signal[a]:
-        st.session_state.total -= st.session_state.signal
-        st.session_state.total += sin_signal
-        st.session_state.signal = sin_signal
 
     with st.sidebar:
         snrbutton = st.checkbox("add noise")
@@ -316,41 +295,20 @@ elif select =="sin wave":
                 st.session_state.check = 0
                 st.experimental_rerun()
 
-        agree = st.checkbox('add signal')
-        if agree:
-            genre = st.radio(
-                "Signal type",
-                ('sin', 'cos'))
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                amp = st.text_input("amplituide")
-            with col2:
-                freq = st.text_input("frequency")
-            with col3:
-                st.text("")
-                st.text("")
-                Button = st.button("add signal")
-        try:
-            if Button and genre == 'sin':
-                addsignal("sin", int(amp), int(freq), time)
-            elif Button and genre == 'cos':
-                addsignal("cos", int(amp), int(freq), time)
-        except:
-            st.write("invalid input")
+
         remove_signal = st.selectbox(
-                    "remove signal", st.session_state.all_signals)
+            "remove signal", st.session_state.all_signals)
         removebutton = st.button("remove")
-        
-        if removebutton and len(st.session_state.all_signals)!=0:
-                # type: ignore
+
+        if removebutton and len(st.session_state.all_signals) != 0:
+            # type: ignore
             removesignal(
-                    remove_signal["type"], remove_signal["amp"], remove_signal["freq"], time)
+                remove_signal["type"], remove_signal["amp"], remove_signal["freq"], time)
             st.experimental_rerun()
         elif removebutton:
             st.write("no signal to remove")
 
-
-    x_sampled, y_sampled =sampling(
+    x_sampled, y_sampled = sampling(
         time, st.session_state.total,  sampling_frequency+1)
     y_inter = sinc_interp(y_sampled, x_sampled, time)
     # fig = plt.figure()
@@ -362,16 +320,17 @@ elif select =="sin wave":
     # plt.ylabel("signal")
     # st.plotly_chart(fig, use_container_width=True)
     fig = make_subplots(rows=1, cols=1)
-    fig.add_trace(go.Scatter(y=st.session_state.total,x=time, mode="lines",name="Signal"), row=1, col=1)
-    fig.add_trace(go.Scatter(y=y_sampled,x=x_sampled, mode="markers",name="samples"), row=1, col=1)
-    fig.add_trace(go.Scatter(y=y_inter,x=time, mode="lines",name="reconstruction"), row=1, col=1)
+    fig.add_trace(go.Scatter(y=st.session_state.total, x=time,
+                  mode="lines", name="Signal"), row=1, col=1)
+    fig.add_trace(go.Scatter(y=y_sampled, x=x_sampled,
+                  mode="markers", name="samples"), row=1, col=1)
+    fig.add_trace(go.Scatter(y=y_inter, x=time, mode="lines",
+                  name="reconstruction"), row=1, col=1)
     fig.update_xaxes(title_text='Time (in seconds)')
     fig.update_yaxes(title_text='Amplitude (in volts)')
     fig.update_layout(autosize=True)
     st.plotly_chart(fig, use_container_width=True)
-    
-    
+
     with st.sidebar:
         st.download_button("download csv file", download(time).to_csv(),
-                    file_name='signal.csv', mime='text/csv')
-    
+                           file_name='signal.csv', mime='text/csv')
