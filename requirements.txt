@@ -1,5 +1,5 @@
 plotly
 streamlit
 pandas
-matplotlib==3.2.2
+matplotlib
 numpy
