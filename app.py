@@ -1,4 +1,5 @@
 from multiprocessing.sharedctypes import Value
+from requests import session
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -19,9 +20,17 @@ st.set_page_config(layout="wide")
 # css modification
 with open('style.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-
+if "save_noise_value" not in st.session_state:
+    st.session_state.save_noise_value = 10
+if "sin_noise" not in st.session_state:
+    st.session_state.sin_noise = np.zeros(1000,dtype=float)
+if "noise_value" not in st.session_state:
+    st.session_state.noise_value = 10
+if "first_time" not in st.session_state:
+    st.session_state.first_time = 0
 # session states variables
-
+if "total_sin" not in st.session_state:
+    st.session_state.total_sin = np.zeros(1000,dtype=float)
 # total amplitude of all signals
 if 'total' not in st.session_state:
     st.session_state.total = np.zeros(1000, dtype=float)
@@ -51,8 +60,9 @@ if "checklastfile" not in st.session_state:
 # rerun after removing noise  // streamlit bug for checkbox // for csv
 if "check_csv" not in st.session_state:
     st.session_state.check_csv = 0
-if "max_freq" not in st.session_state:
-    st.session_state.max_freq = 0
+
+if "list_of_freq" not in st.session_state:
+    st.session_state.list_of_freq = []
 
 # title
 st.title("Sampling Studio")
@@ -79,15 +89,14 @@ def sampling(t, y, SF):
         return sampledt, sampledy
 
 
-def sinc_interp(Ys, Ts, t,SF):
+def sinc_interp(Ys, Ts, t,sf):
     # if len(nt_array) != len(sampled_amplitude):
     #     raise Exception('x and s must be the same length')
     sampled_amplitude = np.array(Ys)
     sampled_time = np.array(Ts)
-    if SF==1:
+    if sf==1:
         T=Ts[0]
         sincM = np.tile(t, (len(sampled_time), 1)) - np.tile(sampled_time[:, np.newaxis], (1, len(t)))
-        
         yNew = np.dot(sampled_amplitude, np.sinc(sincM/T))
         return yNew
     T = (sampled_time[1] - sampled_time[0])
@@ -105,8 +114,9 @@ def addsignal(type, amp, freq, time):
         st.session_state.total += amp*np.cos(2*np.pi*freq*time)
         st.session_state.all_signals.append(
             {"type": "cos", "freq": freq, "amp": amp})
-    if freq > st.session_state.max_freq:
-        st.session_state.max_freq = freq
+    # if freq > st.session_state.max_freq:
+    #     st.session_state.max_freq = freq
+    st.session_state.list_of_freq.append(freq)
 
 
 # def addnoise(snrratio, time):
@@ -144,6 +154,8 @@ def removesignal(type, amp, freq, time):
         st.session_state.total -= amp*np.cos(2*np.pi*freq*time)
         st.session_state.all_signals.remove(
             {"type": "cos", "freq": freq, "amp": amp})
+    st.session_state.list_of_freq.remove(freq)
+    
 
 
 def download(time):
@@ -160,16 +172,17 @@ def download(time):
 
 
 with st.sidebar:
-    select = st.radio("mode",
-                      ('sin', 'csv file'),)
+    # select = st.radio("mode",
+    #                   ('sin', 'csv file'),)
+    uploaded_file = st.file_uploader("Choose a file", type="csv")
 
 
-if select == "csv file":
+
+if uploaded_file is not None:
     st.session_state.sin_mode = 0
-    with st.sidebar:
+    # with st.sidebar:
         # uploaded file
-        uploaded_file = st.file_uploader("Choose a file", type="csv")
-
+        # uploaded_file = st.file_uploader("Choose a file", type="csv")
     if uploaded_file != st.session_state.checklastfile:
         st.session_state.csv_mode = 0
     if uploaded_file is not None:
@@ -184,12 +197,16 @@ if select == "csv file":
         t = file.iloc[:, 0].values
         if st.session_state.csv_mode == 0:
             # st.session_state.stack.append(y_file)
+            st.session_state.total_sin = st.session_state.total
             st.session_state.csv_mode += 1
             st.session_state.total = np.zeros(len(t))
             st.session_state.total += y  # type: ignore
+            st.session_state.sin_noise = st.session_state.noise
             st.session_state.noise = np.zeros(len(t))
             st.session_state.checklastfile = uploaded_file
-            st.session_state.all_signals.clear()
+            st.session_state.save_noise_value = st.session_state.noise_value
+
+            # st.session_state.all_signals.clear()
 
         with st.sidebar:
             snrbutton = st.checkbox("add noise")
@@ -207,37 +224,37 @@ if select == "csv file":
                     st.session_state.check_csv = 0
                     st.experimental_rerun()
                 # noise =
-            agree = st.checkbox('add signal')
-            if agree:
-                genre = st.radio(
-                    "Signal Type:",
-                    ('sin', 'cos'))
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    amp = st.text_input("amplituide")
-                with col2:
-                    freq = st.text_input("frequency")
-                with col3:
-                    st.text("")
-                    st.text("")
-                    Button = st.button("add")
-                try:
-                    if Button and genre == 'sin':
-                        addsignal("sin", int(amp), int(freq), t)
-                    elif Button and genre == 'cos':
-                        addsignal("cos", int(amp), int(freq), t)
+            # agree = st.checkbox('add signal')
+            # if agree:
+            #     genre = st.radio(
+            #         "Signal Type:",
+            #         ('sin', 'cos'))
+            #     col1, col2, col3 = st.columns(3)
+            #     with col1:
+            #         amp = st.text_input("amplituide")
+            #     with col2:
+            #         freq = st.text_input("frequency")
+            #     with col3:
+            #         st.text("")
+            #         st.text("")
+            #         Button = st.button("add")
+            #     try:
+            #         if Button and genre == 'sin':
+            #             addsignal("sin", int(amp), int(freq), t)
+            #         elif Button and genre == 'cos':
+            #             addsignal("cos", int(amp), int(freq), t)
 
-                except:
-                    st.write("invalid input")
-                remove_signal = st.selectbox(
-                    "remove signal", st.session_state.all_signals)
-                removebutton = st.button("remove")
-                if removebutton and len(st.session_state.all_signals) != 0:
-                    removesignal(
-                        remove_signal["type"], remove_signal["amp"], remove_signal["freq"], t)
-                    st.experimental_rerun()
-                elif removebutton:
-                    st.write("no signal to remove")
+            #     except:
+            #         st.write("invalid input")
+            #     remove_signal = st.selectbox(
+            #         "remove signal", st.session_state.all_signals)
+            #     removebutton = st.button("remove")
+            #     if removebutton and len(st.session_state.all_signals) != 0:
+            #         removesignal(
+            #             remove_signal["type"], remove_signal["amp"], remove_signal["freq"], t)
+            #         st.experimental_rerun()
+            #     elif removebutton:
+            #         st.write("no signal to remove")
 
         xsampled, ysampled = sampling(
             t, st.session_state.total, SF)
@@ -261,7 +278,7 @@ if select == "csv file":
                                file_name='signal.csv', mime='text/csv')
 
 
-elif select == "sin":
+else:
 
     st.session_state.csv_mode = 0
     dt = 0.001
@@ -269,10 +286,15 @@ elif select == "sin":
     if st.session_state.sin_mode == 0:
         # st.session_state.stack.append(y_file)
         st.session_state.sin_mode += 1
-        st.session_state.total = np.zeros(len(time))
+        # st.session_state.total = np.zeros(len(time))
+        st.session_state.total = st.session_state.total_sin
+        removenoise(st.session_state.sin_noise)
+
         st.session_state.noise = np.zeros(len(time))
-        st.session_state.all_signals.clear()
-        addsignal("sin", 1, 5, time)
+        # st.session_state.all_signals.clear()
+        if st.session_state.first_time == 0:
+            addsignal("sin", 1, 5, time)
+            st.session_state.first_time = 1
     if len(st.session_state.all_signals) == 0:
         st.session_state.total = np.zeros(1000)
     # st.write(st.session_state.max_freq)
@@ -293,18 +315,23 @@ elif select == "sin":
             addsignal("sin", int(amp), int(freqency), time)
         elif add_signal_button and genre == 'cos':
             addsignal("cos", int(amp), int(freqency), time)
-
+        try:
+            maxfreq = max(st.session_state.list_of_freq)
+        except:
+            maxfreq = 1
         sampling_frequency = st.slider(
-            'sampling frequency', st.session_state.max_freq, 5*st.session_state.max_freq, 2*st.session_state.max_freq)
+            'sampling frequency', maxfreq, 5*maxfreq, 2*maxfreq)
 
     with st.sidebar:
         snrbutton = st.checkbox("add noise")
         if snrbutton:
-            snrratio = st.slider("snr", value=50, min_value=1, max_value=100)
+            snrratio = st.slider("snr", value=st.session_state.save_noise_value, min_value=1, max_value=100)
+            st.session_state.noise_value = snrratio
             removenoise(st.session_state.noise)
             st.session_state.noise = addnoise(snrratio, st.session_state.total)
             st.session_state.check = 1
         elif snrbutton == 0:
+
             removenoise(st.session_state.noise)
             st.session_state.noise = np.zeros(len(time))
             if st.session_state.check == 1:
@@ -313,7 +340,9 @@ elif select == "sin":
 
         remove_signal = st.selectbox(
             "remove signal", st.session_state.all_signals)
-        removebutton = st.button("remove")
+        col4,col5 = st.columns(2)
+        with col4:
+            removebutton = st.button("remove")
 
         if removebutton and len(st.session_state.all_signals) != 0:
             # type: ignore
@@ -347,5 +376,6 @@ elif select == "sin":
     st.plotly_chart(fig, use_container_width=True)
 
     with st.sidebar:
-        st.download_button("download csv file", download(time).to_csv(),
+        with col5:
+            st.download_button("download csv file", download(time).to_csv(),
                            file_name='signal.csv', mime='text/csv')
