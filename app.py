@@ -79,14 +79,19 @@ def sampling(t, y, SF):
         return sampledt, sampledy
 
 
-def sinc_interp(Ys, Ts, t):
+def sinc_interp(Ys, Ts, t,sf):
     # if len(nt_array) != len(sampled_amplitude):
     #     raise Exception('x and s must be the same length')
     sampled_amplitude = np.array(Ys)
     sampled_time = np.array(Ts)
+    if SF==1:
+        T=Ts[0]
+        sincM = np.tile(t, (len(sampled_time), 1)) - np.tile(sampled_time[:, np.newaxis], (1, len(t)))
+        
+        yNew = np.dot(sampled_amplitude, np.sinc(sincM/T))
+        return yNew
     T = (sampled_time[1] - sampled_time[0])
-    sincM = np.tile(t, (len(sampled_time), 1)) - \
-        np.tile(sampled_time[:, np.newaxis], (1, len(t)))
+    sincM = np.tile(t, (len(sampled_time), 1)) - np.tile(sampled_time[:, np.newaxis], (1, len(t)))
     yNew = np.dot(sampled_amplitude, np.sinc(sincM/T))
     return yNew
 
@@ -237,7 +242,7 @@ if select == "csv file":
         xsampled, ysampled = sampling(
             t, st.session_state.total, SF)
         print(len(xsampled))
-        yreconst = sinc_interp(ysampled, xsampled, t)
+        yreconst = sinc_interp(ysampled, xsampled, t,SF)
 
         fig = make_subplots(rows=1, cols=1)
         fig.add_trace(go.Scatter(y=st.session_state.total, x=t,
@@ -319,8 +324,8 @@ elif select == "sin":
             st.write("no signal to remove")
 
     x_sampled, y_sampled = sampling(
-        time, st.session_state.total,  sampling_frequency+1)
-    y_inter = sinc_interp(y_sampled, x_sampled, time)
+        time, st.session_state.total,  sampling_frequency)
+    y_inter = sinc_interp(y_sampled, x_sampled, time,sampling_frequency)
     # fig = plt.figure()
     # plt.plot(time, st.session_state.total)
     # plt.stem(x_sampled, y_sampled, linefmt='yellow',
