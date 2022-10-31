@@ -23,14 +23,14 @@ with open('style.css') as f:
 if "save_noise_value" not in st.session_state:
     st.session_state.save_noise_value = 10
 if "sin_noise" not in st.session_state:
-    st.session_state.sin_noise = np.zeros(1000,dtype=float)
+    st.session_state.sin_noise = np.zeros(1000, dtype=float)
 if "noise_value" not in st.session_state:
     st.session_state.noise_value = 10
 if "first_time" not in st.session_state:
     st.session_state.first_time = 0
 # session states variables
 if "total_sin" not in st.session_state:
-    st.session_state.total_sin = np.zeros(1000,dtype=float)
+    st.session_state.total_sin = np.zeros(1000, dtype=float)
 # total amplitude of all signals
 if 'total' not in st.session_state:
     st.session_state.total = np.zeros(1000, dtype=float)
@@ -89,18 +89,20 @@ def sampling(t, y, SF):
         return sampledt, sampledy
 
 
-def sinc_interp(Ys, Ts, t,sf):
+def sinc_interp(Ys, Ts, t, sf):
     # if len(nt_array) != len(sampled_amplitude):
     #     raise Exception('x and s must be the same length')
     sampled_amplitude = np.array(Ys)
     sampled_time = np.array(Ts)
-    if sf==1:
-        T=Ts[0]
-        sincM = np.tile(t, (len(sampled_time), 1)) - np.tile(sampled_time[:, np.newaxis], (1, len(t)))
+    if sf == 1:
+        T = Ts[0]
+        sincM = np.tile(t, (len(sampled_time), 1)) - \
+            np.tile(sampled_time[:, np.newaxis], (1, len(t)))
         yNew = np.dot(sampled_amplitude, np.sinc(sincM/T))
         return yNew
     T = (sampled_time[1] - sampled_time[0])
-    sincM = np.tile(t, (len(sampled_time), 1)) - np.tile(sampled_time[:, np.newaxis], (1, len(t)))
+    sincM = np.tile(t, (len(sampled_time), 1)) - \
+        np.tile(sampled_time[:, np.newaxis], (1, len(t)))
     yNew = np.dot(sampled_amplitude, np.sinc(sincM/T))
     return yNew
 
@@ -155,10 +157,9 @@ def removesignal(type, amp, freq, time):
         st.session_state.all_signals.remove(
             {"type": "cos", "freq": freq, "amp": amp})
     st.session_state.list_of_freq.remove(freq)
-    
 
 
-def download(time):
+def download(time, max_freq):
     with open("newsignal.csv", "w", newline="") as f:
         # create the csv writer
         writer = csv.writer(f)
@@ -166,7 +167,7 @@ def download(time):
     # write a row to the csv file
         writer.writerow(["time", "amp"])
         for i in range(len(time)):
-            writer.writerow([time[i], st.session_state.total[i]])
+            writer.writerow([time[i], st.session_state.total[i], max_freq])
     df = pd.read_csv("newsignal.csv")
     return df
 
@@ -177,24 +178,22 @@ with st.sidebar:
     uploaded_file = st.file_uploader("Choose a file", type="csv")
 
 
-
 if uploaded_file is not None:
     st.session_state.sin_mode = 0
     # with st.sidebar:
-        # uploaded file
-        # uploaded_file = st.file_uploader("Choose a file", type="csv")
+    # uploaded file
+    # uploaded_file = st.file_uploader("Choose a file", type="csv")
     if uploaded_file != st.session_state.checklastfile:
         st.session_state.csv_mode = 0
     if uploaded_file is not None:
-        with st.sidebar:
-            maxFrequency = int(st.text_input(
-                "Please enter Max Frequency", value="10"))
-            SF = st.slider('sampling frequency', 1, 3 *
-                           maxFrequency, 2*maxFrequency)
         file = pd.read_csv(uploaded_file)
         # x_file = file.iloc[0:x,0].values
         y = file.iloc[:, 1].values
         t = file.iloc[:, 0].values
+        with st.sidebar:
+            max_freq = int(file.iloc[1, 2])
+            SF = st.slider('sampling frequency', max_freq, 5*max_freq, 2*max_freq)
+
         if st.session_state.csv_mode == 0:
             # st.session_state.stack.append(y_file)
             st.session_state.total_sin = st.session_state.total
@@ -259,7 +258,7 @@ if uploaded_file is not None:
         xsampled, ysampled = sampling(
             t, st.session_state.total, SF)
         print(len(xsampled))
-        yreconst = sinc_interp(ysampled, xsampled, t,SF)
+        yreconst = sinc_interp(ysampled, xsampled, t, SF)
 
         fig = make_subplots(rows=1, cols=1)
         fig.add_trace(go.Scatter(y=st.session_state.total, x=t,
@@ -273,9 +272,9 @@ if uploaded_file is not None:
         fig.update_layout(autosize=True)
 
         st.plotly_chart(fig, use_container_width=True)
-        with st.sidebar:
-            st.download_button("download csv file", download(t).to_csv(),
-                               file_name='signal.csv', mime='text/csv')
+        # with st.sidebar:
+        #     st.download_button("download csv file", download(t).to_csv(),
+        #                        file_name='signal.csv', mime='text/csv')
 
 
 else:
@@ -325,7 +324,8 @@ else:
     with st.sidebar:
         snrbutton = st.checkbox("add noise")
         if snrbutton:
-            snrratio = st.slider("snr", value=st.session_state.save_noise_value, min_value=1, max_value=100)
+            snrratio = st.slider(
+                "snr", value=st.session_state.save_noise_value, min_value=1, max_value=100)
             st.session_state.noise_value = snrratio
             removenoise(st.session_state.noise)
             st.session_state.noise = addnoise(snrratio, st.session_state.total)
@@ -340,7 +340,7 @@ else:
 
         remove_signal = st.selectbox(
             "remove signal", st.session_state.all_signals)
-        col4,col5 = st.columns(2)
+        col4, col5 = st.columns(2)
         with col4:
             removebutton = st.button("remove")
 
@@ -354,7 +354,7 @@ else:
 
     x_sampled, y_sampled = sampling(
         time, st.session_state.total,  sampling_frequency)
-    y_inter = sinc_interp(y_sampled, x_sampled, time,sampling_frequency)
+    y_inter = sinc_interp(y_sampled, x_sampled, time, sampling_frequency)
     # fig = plt.figure()
     # plt.plot(time, st.session_state.total)
     # plt.stem(x_sampled, y_sampled, linefmt='yellow',
@@ -377,5 +377,5 @@ else:
 
     with st.sidebar:
         with col5:
-            st.download_button("download csv file", download(time).to_csv(),
-                           file_name='signal.csv', mime='text/csv')
+            st.download_button("download csv file", download(time, maxfreq).to_csv(),
+                               file_name='signal.csv', mime='text/csv')
