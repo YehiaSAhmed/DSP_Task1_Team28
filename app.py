@@ -104,11 +104,25 @@ def addsignal(type, amp, freq, time):
         st.session_state.max_freq = freq
 
 
-def addnoise(snrratio, time):
-    nse1 = 1/snrratio * np.random.rand(len(time), 1)
-    for i in range(len(time)):
-        st.session_state.total[i] += nse1[i]   # type: ignore
-    return nse1
+# def addnoise(snrratio, time):
+#     nse1 = 1/snrratio * np.random.rand(len(time), 1)
+#     for i in range(len(time)):
+#         st.session_state.total[i] += nse1[i]   # type: ignore
+#     return nse1
+
+def addnoise(SNR, y):
+    # nse1 = 1/snrratio * np.random.rand(len(time), 1)
+    # for i in range(len(time)):
+    #     st.session_state.total[i] += nse1[i]   # type: ignore
+    # return nse1
+    signal_power = (np.sum(abs(y)**2))/len(y)
+    power_db = 10*np.log10(signal_power)
+    noise_db = power_db - SNR
+    noisepower = 10**(noise_db/10)
+    noise = np.random.normal(0, np.sqrt(noisepower), len(y))
+    for i in range(len(y)):
+        st.session_state.total[i] += noise[i]
+    return noise
 
 
 def removenoise(noise):
@@ -141,7 +155,8 @@ def download(time):
 
 
 with st.sidebar:
-    select = st.selectbox("type of sampling", ["sin wave", "csv file"])
+    select = st.radio("mode",
+                      ('sin', 'csv file'),)
 
 
 if select == "csv file":
@@ -177,7 +192,8 @@ if select == "csv file":
                 snrratio = st.slider(
                     "snr", value=50, min_value=1, max_value=100)
                 removenoise(st.session_state.noise)
-                st.session_state.noise = addnoise(snrratio, t)
+                st.session_state.noise = addnoise(
+                    snrratio, st.session_state.total)
                 st.session_state.check_csv = 1
             elif snrbutton == 0:
                 removenoise(st.session_state.noise)
@@ -218,9 +234,6 @@ if select == "csv file":
                 elif removebutton:
                     st.write("no signal to remove")
 
-
-
-
         xsampled, ysampled = sampling(
             t, st.session_state.total, SF)
         print(len(xsampled))
@@ -243,7 +256,7 @@ if select == "csv file":
                                file_name='signal.csv', mime='text/csv')
 
 
-elif select == "sin wave":
+elif select == "sin":
 
     st.session_state.csv_mode = 0
     dt = 0.001
@@ -279,14 +292,12 @@ elif select == "sin wave":
         sampling_frequency = st.slider(
             'sampling frequency', st.session_state.max_freq, 5*st.session_state.max_freq, 2*st.session_state.max_freq)
 
-
-
     with st.sidebar:
         snrbutton = st.checkbox("add noise")
         if snrbutton:
             snrratio = st.slider("snr", value=50, min_value=1, max_value=100)
             removenoise(st.session_state.noise)
-            st.session_state.noise = addnoise(snrratio, time)
+            st.session_state.noise = addnoise(snrratio, st.session_state.total)
             st.session_state.check = 1
         elif snrbutton == 0:
             removenoise(st.session_state.noise)
@@ -294,7 +305,6 @@ elif select == "sin wave":
             if st.session_state.check == 1:
                 st.session_state.check = 0
                 st.experimental_rerun()
-
 
         remove_signal = st.selectbox(
             "remove signal", st.session_state.all_signals)
