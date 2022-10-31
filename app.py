@@ -79,7 +79,7 @@ def sampling(t, y, SF):
         return sampledt, sampledy
 
 
-def sinc_interp(Ys, Ts, t,sf):
+def sinc_interp(Ys, Ts, t,SF):
     # if len(nt_array) != len(sampled_amplitude):
     #     raise Exception('x and s must be the same length')
     sampled_amplitude = np.array(Ys)
