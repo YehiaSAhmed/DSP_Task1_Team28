@@ -1,6 +1,6 @@
 # Signal Studio - Task 1 DSP
 ## About
-Signal Studio is a webapp that depicts signal sampling and recovery while emphasising the significance and validation of the Nyquist rate.
+Sampling Studio is a webapp that depicts signal sampling and recovery while emphasising the significance and validation of the Nyquist rate.
 ## Team Members
 Name| Section 
 --- | --- |
@@ -36,8 +36,9 @@ streamlit run app.py
 ## Features
 This web app allows user to
 - Load and plot a CSV Signal or compose and mix their own Sinusoidals.
-- Sample a signal with varying sampling frequency and recostruct the sampled points.
-- Visualize Interactive plots (zoom , pan, slice, and download as images) . 
+- Sample a signal with varying sampling frequency and reconstruct the sampled points.
+- reconstruct a signal with either normalized frequency (with a range from 1 to 5fmax) or another frequency number (in Hz).
+- Visualize Interactive plots (zoom , pan, slice, and download as images). 
 - View and Hide each curve on the same graph.
 - Add or remove sinusoidal signals (sin or cosine) of varying frequencies and magnitudes.
 - Add or remove noise with a variable SNR level.
